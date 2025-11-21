@@ -16,6 +16,8 @@
     input[type="text"]{flex:1; padding:10px 12px; border:1px solid #d7dde6; border-radius:8px}
     button{background:#0b63d6;color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer}
     a.link {color:#0b63d6; text-decoration:none; font-weight:600}
+    .suggest {margin-top:6px; font-size:0.95em; color:#445}
+    .quick {background:#eef6ff;border:1px solid #cfe6ff;color:#0b63d6;padding:6px 8px;border-radius:6px;margin:4px 4px 0 0;cursor:pointer}
   </style>
 </head>
 <body>
@@ -23,7 +25,7 @@
     <div class="header">Bot Info Administrasi</div>
     <div id="messages" class="messages" aria-live="polite"></div>
     <form id="form" class="footer" onsubmit="return false;">
-      <input id="input" type="text" placeholder="Tanya: syarat KTP, cara buat SIM, info BPJS..." autocomplete="off" />
+      <input id="input" type="text" placeholder="Tanya: syarat KTP, cara buat SIM, info BPJS, perceraian, nikah..." autocomplete="off" />
       <button id="send">Kirim</button>
     </form>
   </div>
@@ -50,6 +52,16 @@
         title: 'BPJS Kesehatan',
         text: 'Pendaftaran bisa dilakukan online atau ke kantor BPJS. Persyaratan: KTP, KK, dan data kontak. Pilih kelas dan metode pembayaran.',
         link: {url:'https://www.bpjs-kesehatan.go.id/', label:'Info BPJS Kesehatan'}
+      },
+      nikah: {
+        title: 'Pendaftaran Nikah (pernikahan)',
+        text: 'Untuk nikah: Muslim mendaftar di KUA (Kementerian Agama) setempat; non-muslim melalui catatan sipil / Dinas Kependudukan. Persyaratan umum: KTP, KK, akta kelahiran, surat izin orang tua (jika perlu), dan dokumen administrasi lain sesuai agama/daerah.',
+        link: {url:'https://kemenag.go.id/', label:'Kementerian Agama (KUA)'}
+      },
+      cerai: {
+        title: 'Perceraian / Surat Cerai',
+        text: 'Prosedur: ajukan permohonan cerai ke Pengadilan Agama (untuk pasangan muslim) atau Pengadilan Negeri (untuk non-muslim). Dokumen: akta nikah, KTP, bukti mediasi/permohonan, dan bukti pendukung. Setelah putusan pengadilan, akta cerai dapat dicatatkan di Dukcapil untuk pembaruan status.',
+        link: {url:'https://www.mahkamahagung.go.id/', label:'Info Pengadilan (Mahkamah Agung)'}
       }
     };
 
@@ -63,12 +75,20 @@
       div.innerHTML = text;
       messagesEl.appendChild(div);
       messagesEl.scrollTop = messagesEl.scrollHeight;
+      // attach click handlers for quick buttons
+      Array.from(div.querySelectorAll('.quick')).forEach(b => {
+        b.addEventListener('click', () => {
+          inputEl.value = b.dataset.q;
+          inputEl.focus();
+          send();
+        });
+      });
     }
 
     // small-talk / persona replies
     const persona = {
       greetings: [
-        'Halo! Saya asisten informasi administrasi. Bisa bantu tentang KTP, KK, SIM, atau BPJS.',
+        'Halo! Saya asisten informasi administrasi. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, atau cerai.',
         'Hai! Saya bot informasi. Apa yang ingin Anda tanyakan hari ini?',
         'Halo — saya asisten virtual. Silakan tanya kebutuhan administrasi Anda.'
       ],
@@ -81,15 +101,36 @@
         'Baik, jika perlu kembali kapan saja.'
       ],
       fallback: [
-        'Maaf, saya belum paham. Coba tanyakan: "cara buat KTP" atau "syarat SIM".',
+        'Maaf, saya belum paham. Coba tanyakan: "cara buat KTP" atau "syarat nikah".',
         'Saya belum bisa menjawab itu. Anda bisa minta "menu" untuk opsi.'
       ]
     };
 
     function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
+    function buildSearchLinks(q){
+      const enc = encodeURIComponent(q);
+      return '<div class="suggest">Coba cari lebih lanjut: ' +
+        '<a class="link" href="https://www.google.com/search?q=' + enc + '" target="_blank" rel="noopener">Google</a> • ' +
+        '<a class="link" href="https://duckduckgo.com/?q=' + enc + '" target="_blank" rel="noopener">DuckDuckGo</a> • ' +
+        '<a class="link" href="https://id.wikipedia.org/w/index.php?search=' + enc + '" target="_blank" rel="noopener">Wikipedia</a>' +
+        '</div>';
+    }
+
+    function moreInfoTemplate(query){
+      return '<strong>Tidak menemukan data spesifik untuk: "' + escapeHtml(query) + '"</strong><br>' +
+        'Saran: sebutkan detail (mis. agama, kota, atau jenis dokumen) agar saya bisa berikan info lebih tepat.' +
+        buildSearchLinks(query) +
+        '<div class="suggest">Contoh pertanyaan cepat:</div>' +
+        '<div>' +
+        '<button class="quick" data-q="cara daftar nikah di KUA">cara daftar nikah di KUA</button>' +
+        '<button class="quick" data-q="cara mengurus akta cerai">cara mengurus akta cerai</button>' +
+        '<button class="quick" data-q="syarat nikah catatan sipil">syarat nikah catatan sipil</button>' +
+        '</div>';
+    }
+
     function botReply(raw) {
-      const msg = raw.toLowerCase();
+      const msg = raw.toLowerCase().trim();
 
       // greetings and small talk
       if (/\b(hi|halo|hai|selamat pagi|selamat siang|selamat sore|selamat malam)\b/.test(msg)) {
@@ -102,7 +143,17 @@
         return rand(persona.bye);
       }
       if (/\b(kenalan|siapa kamu|kamu siapa|apa kamu)\b/.test(msg)) {
-        return 'Saya asisten virtual yang membantu informasi pembuatan KTP, KK, SIM, dan BPJS. Sebutkan yang Anda butuhkan.';
+        return 'Saya asisten virtual yang membantu informasi pembuatan KTP, KK, SIM, BPJS, nikah, dan cerai. Sebutkan yang Anda butuhkan.';
+      }
+
+      // marriage / nikah
+      if (/\b(nikah|pernikahan|surat nikah|akta nikah|nikah siri|daftar nikah|cara nikah)\b/.test(msg)) {
+        return formatKB(kb.nikah);
+      }
+
+      // divorce / cerai
+      if (/\b(cerai|perceraian|surat cerai|akta cerai|mengurus cerai|sengketa rumah tangga)\b/.test(msg)) {
+        return formatKB(kb.cerai);
       }
 
       // keyword matching for services
@@ -113,18 +164,21 @@
 
       // if user asks about syarat/cara/biaya
       if (/\b(syarat|cara|biaya|langkah)\b/.test(msg)) {
+        if (/nikah|pernikahan/.test(msg)) return formatKB(kb.nikah);
+        if (/cerai|perceraian/.test(msg)) return formatKB(kb.cerai);
         if (/ktp/.test(msg)) return formatKB(kb.ktp);
         if (/kk/.test(msg)) return formatKB(kb.kk);
         if (/sim/.test(msg)) return formatKB(kb.sim);
         if (/bpjs/.test(msg)) return formatKB(kb.bpjs);
-        return 'Sebutkan tujuan: KTP, KK, SIM, atau BPJS. Contoh: "cara buat SIM".';
+        return 'Sebutkan tujuan: KTP, KK, SIM, BPJS, nikah, atau cerai. Contoh: "syarat nikah di KUA".';
       }
 
       if (/\b(help|menu|opsi|pilihan)\b/.test(msg)) {
-        return 'Anda bisa tanya: "cara buat KTP", "syarat KK", "informasi SIM", atau "daftar BPJS".';
+        return 'Anda bisa tanya: "cara buat KTP", "syarat nikah", "cara mengurus akta cerai", atau "daftar BPJS".';
       }
 
-      return rand(persona.fallback);
+      // fallback: try to be helpful for out-of-scope queries
+      return moreInfoTemplate(raw);
     }
 
     function formatKB(item){
