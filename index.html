@@ -2,217 +2,244 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Chatbot Informasi</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+  <title>Lisa — Asisten Informasi</title>
   <style>
-    body{font-family:Segoe UI, Roboto, Arial; background:#f2f6fb; margin:0; display:flex; align-items:center; justify-content:center; height:100vh}
-    .chat {width:420px; max-width:95%; background:#fff; border-radius:8px; box-shadow:0 8px 24px rgba(11,22,40,.08); overflow:hidden; display:flex; flex-direction:column}
-    .header{padding:12px 16px; background:#0b63d6; color:#fff}
-    .messages{padding:16px; height:360px; overflow:auto; display:flex; flex-direction:column; gap:10px; background:linear-gradient(#fff,#f9fbff)}
-    .msg{max-width:85%; padding:10px 12px; border-radius:12px; line-height:1.3}
-    .user{align-self:flex-end; background:#e6f0ff; color:#032b57}
-    .bot{align-self:flex-start; background:#f1f4f8; color:#07203b}
-    .footer{display:flex; gap:8px; padding:10px; border-top:1px solid #eef2f6}
-    input[type="text"]{flex:1; padding:10px 12px; border:1px solid #d7dde6; border-radius:8px}
-    button{background:#0b63d6;color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer}
-    a.link {color:#0b63d6; text-decoration:none; font-weight:600}
-    .suggest {margin-top:6px; font-size:0.95em; color:#445}
-    .quick {background:#eef6ff;border:1px solid #cfe6ff;color:#0b63d6;padding:6px 8px;border-radius:6px;margin:4px 4px 0 0;cursor:pointer}
+    :root{
+      --bg:#f2f6fb; --card:#ffffff; --primary:#0b63d6; --muted:#7a8aa6;
+      --bot-bg:#f1f4f8; --user-bg:#e6f0ff;
+      --header-h:72px; --footer-h:68px; --max-w:820px;
+    }
+
+    /* page */
+    html,body{height:100%; margin:0; background:var(--bg); font-family:Inter,Segoe UI,Roboto,Arial; color:#0b2b45; -webkit-font-smoothing:antialiased}
+    .wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:12px; box-sizing:border-box}
+
+    /* chat shell: use full available height so sticky header/footer work on mobile */
+    .chat{
+      width:100%;
+      max-width:var(--max-w);
+      height:calc(100vh - 24px);
+      display:flex;
+      flex-direction:column;
+      background:linear-gradient(180deg,var(--card),#fbfdff);
+      border-radius:16px;
+      box-shadow:0 10px 30px rgba(3,20,45,.08);
+      overflow:hidden;
+      border:1px solid rgba(11,99,214,0.06);
+    }
+
+    /* header (sticky) */
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px;
+      background:linear-gradient(90deg,var(--primary),#0a56c0);
+      color:#fff;
+      position:sticky;
+      top:0;
+      z-index:5;
+      min-height:var(--header-h);
+      box-sizing:border-box;
+      flex-wrap:wrap;
+    }
+    .brand{display:flex; gap:12px; align-items:center; min-width:0}
+    .logo{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:0 0 auto}
+    .title{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .subtitle{font-size:12px; opacity:.95; color:rgba(255,255,255,0.95); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
+    .controls{display:flex; gap:8px; align-items:center; flex:0 0 auto; max-width:50%}
+    .mute{background:rgba(255,255,255,0.12); padding:8px 10px; border-radius:8px; color:#fff; cursor:pointer; border:1px solid rgba(255,255,255,0.08)}
+    select#voiceSelect{background:transparent;color:#fff;border:none;outline:none;padding:6px;border-radius:6px; min-width:160px}
+    select#voiceSelect, select#voiceSelect option { color:#fff; -webkit-text-fill-color:#fff; }
+
+    /* messages: flexible area */
+    .messages{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      overflow:auto;
+      background:linear-gradient(180deg,#fff,#f7fbff);
+      flex:1 1 auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    .msg{max-width:86%; padding:10px 12px; border-radius:12px; line-height:1.35; word-break:break-word}
+    .bot{align-self:flex-start; background:var(--bot-bg); color:#07203b}
+    .user{align-self:flex-end; background:var(--user-bg); color:#032b57}
+    .meta{font-size:11px;color:var(--muted);margin-top:6px}
+
+    /* footer (sticky) */
+    .footer{
+      padding:10px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      border-top:1px solid rgba(10,20,40,0.04);
+      background:linear-gradient(180deg,transparent,rgba(250,252,255,0.6));
+      position:sticky;
+      bottom:0;
+      z-index:6;
+      box-sizing:border-box;
+      min-height:var(--footer-h);
+    }
+    .inputWrap{display:flex;gap:8px;flex:1;align-items:center; min-width:0}
+    input[type="text"]{flex:1;padding:12px 14px;border-radius:10px;border:1px solid #e4ecf8;background:#fff;font-size:15px;outline:none;box-shadow:inset 0 1px 0 rgba(10,20,40,0.02);min-width:0}
+    button.send{background:var(--primary);color:#fff;border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;flex:0 0 auto}
+
+    /* quick suggestions */
+    .suggest{margin-top:6px;font-size:0.95em;color:#415a75}
+    .quick{background:#eef6ff;border:1px solid #cfe6ff;color:var(--primary);padding:6px 8px;border-radius:6px;margin:6px 6px 0 0;cursor:pointer;font-size:13px}
+
+    /* responsive tweaks */
+    @media (max-width:600px){
+      .chat{height:100vh; border-radius:12px}
+      .header{padding:10px; gap:8px; align-items:flex-start}
+      .brand{width:100%; gap:10px}
+      .controls{width:100%; justify-content:space-between; gap:8px; margin-top:6px; flex-wrap:wrap}
+      select#voiceSelect{min-width:0; width:48%}
+      .messages{padding:10px; gap:10px}
+      .footer{padding:8px}
+      input[type="text"]{padding:10px}
+      .quick{font-size:12px;padding:6px}
+    }
+
+    /* accessibility */
+    button:focus, select:focus, input:focus { outline:3px solid rgba(11,99,214,0.18); outline-offset:2px; }
   </style>
 </head>
 <body>
-  <div class="chat" role="region" aria-label="Chatbot informasi">
-    <div class="header">Bot Info Administrasi</div>
-    <div id="messages" class="messages" aria-live="polite"></div>
-    <form id="form" class="footer" onsubmit="return false;">
-      <input id="input" type="text" placeholder="Tanya: syarat KTP, cara buat SIM, info BPJS, perceraian, nikah..." autocomplete="off" />
-      <button id="send">Kirim</button>
-    </form>
+  <div class="wrap">
+    <main class="chat" role="application" aria-label="Lisa - Asisten Informasi">
+      <header class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">L</div>
+          <div style="min-width:0">
+            <div class="title">Lisa — Asisten Informasi</div>
+            <div class="subtitle">KTP • KK • SIM • BPJS • Nikah • Cerai</div>
+          </div>
+        </div>
+
+        <div class="controls" aria-hidden="false">
+          <button id="voiceToggle" class="mute" title="Suara: aktif/nonaktif">🔊</button>
+          <select id="voiceSelect" aria-label="Pilih suara" title="Pilih suara"><option>Memuat suara ID...</option></select>
+        </div>
+      </header>
+
+      <section id="messages" class="messages" aria-live="polite"></section>
+
+      <form id="form" class="footer" onsubmit="return false;">
+        <div class="inputWrap">
+          <input id="input" type="text" placeholder="Tanya: syarat KTP, cara buat SIM, info BPJS, nikah, cerai..." autocomplete="off" />
+        </div>
+        <button id="send" class="send" aria-label="Kirim pesan">Kirim</button>
+      </form>
+    </main>
   </div>
 
   <script>
-    // Pengetahuan sederhana / link resmi
-    const kb = {
-      ktp: {
-        title: 'Membuat KTP (Kartu Tanda Penduduk)',
-        text: 'Syarat umum: membawa Kartu Keluarga (KK), akta kelahiran/ surat keterangan lahir, fotokopi. Proses: registrasi di Dinas Dukcapil kab/kota, verifikasi data, pengambilan foto. Untuk e-KTP, cek persyaratan di website Dukcapil.',
-        link: {url:'https://www.dukcapil.kemendagri.go.id/', label:'Info Dukcapil'}
-      },
-      kk: {
-        title: 'Membuat / Mengurus KK (Kartu Keluarga)',
-        text: 'Perubahan atau penerbitan KK biasanya memerlukan dokumen identitas anggota keluarga (KTP, akta), laporan kelahiran/kematian/perubahan alamat ke Dukcapil setempat.',
-        link: {url:'https://www.dukcapil.kemendagri.go.id/', label:'Info Dukcapil'}
-      },
-      sim: {
-        title: 'Membuat SIM (Surat Izin Mengemudi)',
-        text: 'Persyaratan umum: fotokopi KTP, foto, lulus tes kesehatan dan psikologi (tergantung jenis SIM), lulus ujian teori dan praktik di Satpas/Polres setempat.',
-        link: {url:'https://sim.korlantas.polri.go.id/', label:'Info SIM Korlantas'}
-      },
-      bpjs: {
-        title: 'BPJS Kesehatan',
-        text: 'Pendaftaran bisa dilakukan online atau ke kantor BPJS. Persyaratan: KTP, KK, dan data kontak. Pilih kelas dan metode pembayaran.',
-        link: {url:'https://www.bpjs-kesehatan.go.id/', label:'Info BPJS Kesehatan'}
-      },
-      nikah: {
-        title: 'Pendaftaran Nikah (pernikahan)',
-        text: 'Untuk nikah: Muslim mendaftar di KUA (Kementerian Agama) setempat; non-muslim melalui catatan sipil / Dinas Kependudukan. Persyaratan umum: KTP, KK, akta kelahiran, surat izin orang tua (jika perlu), dan dokumen administrasi lain sesuai agama/daerah.',
-        link: {url:'https://kemenag.go.id/', label:'Kementerian Agama (KUA)'}
-      },
-      cerai: {
-        title: 'Perceraian / Surat Cerai',
-        text: 'Prosedur: ajukan permohonan cerai ke Pengadilan Agama (untuk pasangan muslim) atau Pengadilan Negeri (untuk non-muslim). Dokumen: akta nikah, KTP, bukti mediasi/permohonan, dan bukti pendukung. Setelah putusan pengadilan, akta cerai dapat dicatatkan di Dukcapil untuk pembaruan status.',
-        link: {url:'https://www.mahkamahagung.go.id/', label:'Info Pengadilan (Mahkamah Agung)'}
-      }
-    };
-
+    // minimal adjustments: auto-scroll on focus, keep previous TTS logic
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('send');
+    const voiceToggle = document.getElementById('voiceToggle');
+    const voiceSelect = document.getElementById('voiceSelect');
 
-    function appendMessage(text, who='bot') {
+    function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function stripHtml(html){ const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; }
+
+    function appendMessage(html, who='bot'){
       const div = document.createElement('div');
       div.className = 'msg ' + (who==='user' ? 'user' : 'bot');
-      div.innerHTML = text;
+      div.innerHTML = html;
       messagesEl.appendChild(div);
       messagesEl.scrollTop = messagesEl.scrollHeight;
-      // attach click handlers for quick buttons
-      Array.from(div.querySelectorAll('.quick')).forEach(b => {
-        b.addEventListener('click', () => {
-          inputEl.value = b.dataset.q;
-          inputEl.focus();
-          send();
-        });
-      });
     }
 
-    // small-talk / persona replies
-    const persona = {
-      greetings: [
-        'Halo! Saya asisten informasi administrasi. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, atau cerai.',
-        'Hai! Saya bot informasi. Apa yang ingin Anda tanyakan hari ini?',
-        'Halo — saya asisten virtual. Silakan tanya kebutuhan administrasi Anda.'
-      ],
-      thanks: [
-        'Sama-sama. Butuh bantuan lain?',
-        'Dengan senang hati. Ada yang lain?'
-      ],
-      bye: [
-        'Sampai jumpa. Semoga membantu.',
-        'Baik, jika perlu kembali kapan saja.'
-      ],
-      fallback: [
-        'Maaf, saya belum paham. Coba tanyakan: "cara buat KTP" atau "syarat nikah".',
-        'Saya belum bisa menjawab itu. Anda bisa minta "menu" untuk opsi.'
-      ]
+    // basic KB + botReply (kept simple)
+    const kb = {
+      ktp:{title:'Membuat KTP', text:'Syarat umum: membawa KK, akta kelahiran, fotokopi. Daftar di Dukcapil.' , link:{url:'https://www.dukcapil.kemendagri.go.id/', label:'Info Dukcapil'}},
+      kk:{title:'Membuat/Mengurus KK', text:'Perubahan/penerbitan KK: dokumen anggota keluarga, lapor ke Dukcapil.' , link:{url:'https://www.dukcapil.kemendagri.go.id/', label:'Info Dukcapil'}},
+      sim:{title:'Membuat SIM', text:'Persyaratan: fotokopi KTP, tes kesehatan, ujian teori & praktik.' , link:{url:'https://sim.korlantas.polri.go.id/', label:'Info SIM Korlantas'}},
+      bpjs:{title:'BPJS Kesehatan', text:'Daftar online/ke kantor BPJS. Persyaratan: KTP, KK.' , link:{url:'https://www.bpjs-kesehatan.go.id/', label:'Info BPJS Kesehatan'}},
+      nikah:{title:'Pendaftaran Nikah', text:'Untuk muslim daftar di KUA; non-muslim di catatan sipil. Persyaratan: KTP, KK, akta kelahiran.' , link:{url:'https://kemenag.go.id/', label:'Kementerian Agama'}},
+      cerai:{title:'Perceraian', text:'Ajukan ke Pengadilan Agama (muslim) atau Pengadilan Negeri (non-muslim). Dokumen: akta nikah, KTP.' , link:{url:'https://www.mahkamahagung.go.id/', label:'Info Pengadilan'}}
     };
 
-    function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+    function formatKB(item){ return '<strong>'+item.title+'</strong><br>'+item.text+'<br><a class="link" href="'+item.link.url+'" target="_blank" rel="noopener">'+item.link.label+'</a>'; }
 
-    function buildSearchLinks(q){
-      const enc = encodeURIComponent(q);
-      return '<div class="suggest">Coba cari lebih lanjut: ' +
-        '<a class="link" href="https://www.google.com/search?q=' + enc + '" target="_blank" rel="noopener">Google</a> • ' +
-        '<a class="link" href="https://duckduckgo.com/?q=' + enc + '" target="_blank" rel="noopener">DuckDuckGo</a> • ' +
-        '<a class="link" href="https://id.wikipedia.org/w/index.php?search=' + enc + '" target="_blank" rel="noopener">Wikipedia</a>' +
-        '</div>';
-    }
-
-    function moreInfoTemplate(query){
-      return '<strong>Tidak menemukan data spesifik untuk: "' + escapeHtml(query) + '"</strong><br>' +
-        'Saran: sebutkan detail (mis. agama, kota, atau jenis dokumen) agar saya bisa berikan info lebih tepat.' +
-        buildSearchLinks(query) +
-        '<div class="suggest">Contoh pertanyaan cepat:</div>' +
-        '<div>' +
-        '<button class="quick" data-q="cara daftar nikah di KUA">cara daftar nikah di KUA</button>' +
-        '<button class="quick" data-q="cara mengurus akta cerai">cara mengurus akta cerai</button>' +
-        '<button class="quick" data-q="syarat nikah catatan sipil">syarat nikah catatan sipil</button>' +
-        '</div>';
-    }
-
-    function botReply(raw) {
-      const msg = raw.toLowerCase().trim();
-
-      // greetings and small talk
-      if (/\b(hi|halo|hai|selamat pagi|selamat siang|selamat sore|selamat malam)\b/.test(msg)) {
-        return rand(persona.greetings);
-      }
-      if (/\b(terima kasih|thanks|makasih|trimakasih)\b/.test(msg)) {
-        return rand(persona.thanks);
-      }
-      if (/\b(bai|bye|sampai jumpa|dadah|selamat tinggal)\b/.test(msg)) {
-        return rand(persona.bye);
-      }
-      if (/\b(kenalan|siapa kamu|kamu siapa|apa kamu)\b/.test(msg)) {
-        return 'Saya asisten virtual yang membantu informasi pembuatan KTP, KK, SIM, BPJS, nikah, dan cerai. Sebutkan yang Anda butuhkan.';
-      }
-
-      // marriage / nikah
-      if (/\b(nikah|pernikahan|surat nikah|akta nikah|nikah siri|daftar nikah|cara nikah)\b/.test(msg)) {
-        return formatKB(kb.nikah);
-      }
-
-      // divorce / cerai
-      if (/\b(cerai|perceraian|surat cerai|akta cerai|mengurus cerai|sengketa rumah tangga)\b/.test(msg)) {
-        return formatKB(kb.cerai);
-      }
-
-      // keyword matching for services
+    function botReply(raw){
+      const msg = raw.toLowerCase();
       if (/\b(ktp|e-?ktp)\b/.test(msg)) return formatKB(kb.ktp);
       if (/\b(kk|kartu keluarga)\b/.test(msg)) return formatKB(kb.kk);
-      if (/\b(sim|surat izin mengemudi)\b/.test(msg)) return formatKB(kb.sim);
-      if (/\b(bpjs|bpjs kesehatan|bpjs-kesehatan)\b/.test(msg)) return formatKB(kb.bpjs);
-
-      // if user asks about syarat/cara/biaya
-      if (/\b(syarat|cara|biaya|langkah)\b/.test(msg)) {
-        if (/nikah|pernikahan/.test(msg)) return formatKB(kb.nikah);
-        if (/cerai|perceraian/.test(msg)) return formatKB(kb.cerai);
-        if (/ktp/.test(msg)) return formatKB(kb.ktp);
-        if (/kk/.test(msg)) return formatKB(kb.kk);
-        if (/sim/.test(msg)) return formatKB(kb.sim);
-        if (/bpjs/.test(msg)) return formatKB(kb.bpjs);
-        return 'Sebutkan tujuan: KTP, KK, SIM, BPJS, nikah, atau cerai. Contoh: "syarat nikah di KUA".';
-      }
-
-      if (/\b(help|menu|opsi|pilihan)\b/.test(msg)) {
-        return 'Anda bisa tanya: "cara buat KTP", "syarat nikah", "cara mengurus akta cerai", atau "daftar BPJS".';
-      }
-
-      // fallback: try to be helpful for out-of-scope queries
-      return moreInfoTemplate(raw);
+      if (/\b(sim)\b/.test(msg)) return formatKB(kb.sim);
+      if (/\b(bpjs)\b/.test(msg)) return formatKB(kb.bpjs);
+      if (/\b(nikah|pernikahan)\b/.test(msg)) return formatKB(kb.nikah);
+      if (/\b(cerai|perceraian)\b/.test(msg)) return formatKB(kb.cerai);
+      if (/\b(halo|hi|hai)\b/.test(msg)) return 'Halo, saya Lisa. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, atau cerai.';
+      return 'Maaf, saya belum paham. Coba: "syarat KTP" atau "cara buat SIM".';
     }
 
-    function formatKB(item){
-      return '<strong>' + item.title + '</strong><br>' + item.text + '<br><a class="link" href="' + item.link.url + '" target="_blank" rel="noopener">' + item.link.label + '</a>';
+    // minimal TTS (Indonesia only) — keep previous polling approach but lightweight
+    let voiceEnabled = true;
+    let voices = [];
+    let selectedVoice = null;
+    function populateIndoVoices(){
+      voiceSelect.innerHTML = '';
+      const idVoices = voices.filter(v=>v.lang && /(^|-)id($|[-_])/i.test(v.lang));
+      if (!idVoices.length){ voiceSelect.innerHTML = '<option value="-1">Tidak ada suara Indonesia</option>'; voiceSelect.disabled=true; selectedVoice=null; return; }
+      idVoices.forEach(v=>{
+        const i = voices.indexOf(v);
+        const opt = document.createElement('option');
+        opt.value = i; opt.textContent = v.name + ' ('+v.lang+')'; voiceSelect.appendChild(opt);
+      });
+      voiceSelect.disabled=false;
+      selectedVoice = voices[parseInt(voiceSelect.value,10)] || idVoices[0];
+    }
+    function loadVoices(){ voices = (speechSynthesis && speechSynthesis.getVoices()) || []; populateIndoVoices(); }
+    if ('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; setTimeout(loadVoices,500); } else { voiceSelect.innerHTML='<option>Unavailable</option>'; voiceSelect.disabled=true; voiceToggle.disabled=true; }
+    voiceToggle.addEventListener('click', ()=>{ voiceEnabled = !voiceEnabled; voiceToggle.textContent = voiceEnabled ? '🔊' : '🔇'; });
+    voiceSelect.addEventListener('change', ()=>{ const idx = parseInt(voiceSelect.value,10); selectedVoice = Number.isFinite(idx)&&idx>=0 ? voices[idx] : null; });
+
+    function speak(text){
+      if (!voiceEnabled || !('speechSynthesis' in window) || !text) return;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (selectedVoice) u.voice = selectedVoice;
+      u.lang = selectedVoice?.lang || 'id-ID';
+      u.rate = 1; u.pitch = 1;
+      speechSynthesis.speak(u);
     }
 
-    // initial welcome (AI-like)
-    appendMessage(rand(persona.greetings));
+    // initial welcome
+    appendMessage('Halo, saya Lisa. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, atau cerai.');
 
-    // send handler
-    function send() {
+    // send logic
+    function handleSend(){
       const text = inputEl.value.trim();
       if (!text) return;
       appendMessage(escapeHtml(text), 'user');
       inputEl.value = '';
-      // simulate typing delay
-      appendMessage('...', 'bot');
-      setTimeout(() => {
-        // remove typing
-        const last = messagesEl.querySelectorAll('.bot');
-        if (last.length) {
-          const loader = last[last.length-1];
-          if (loader && loader.textContent === '...') loader.remove();
-        }
+      appendMessage('<em>Lisa sedang mengetik...</em>', 'bot');
+      setTimeout(()=>{
+        const bots = messagesEl.querySelectorAll('.bot');
+        if (bots.length){ const last = bots[bots.length-1]; if (last && /sedang mengetik/.test(last.textContent)) last.remove(); }
         const reply = botReply(text);
         appendMessage(reply, 'bot');
+        // speak the reply
+        speak(stripHtml(reply));
       }, 600);
     }
 
-    sendBtn.addEventListener('click', send);
-    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+    sendBtn.addEventListener('click', handleSend);
+    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') handleSend(); });
 
-    // simple HTML escape
-    function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    // scroll helpers to keep input visible on mobile keyboards
+    inputEl.addEventListener('focus', ()=> setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 300));
+    window.addEventListener('resize', ()=> setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 200));
+    window.addEventListener('orientationchange', ()=> setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 300));
   </script>
 </body>
 </html>
