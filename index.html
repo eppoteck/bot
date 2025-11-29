@@ -10,12 +10,8 @@
       --bot-bg:#f1f4f8; --user-bg:#e6f0ff;
       --header-h:72px; --footer-h:68px; --max-w:820px;
     }
-
-    /* page */
     html,body{height:100%; margin:0; background:var(--bg); font-family:Inter,Segoe UI,Roboto,Arial; color:#0b2b45; -webkit-font-smoothing:antialiased}
     .wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:12px; box-sizing:border-box}
-
-    /* chat shell: use full available height so sticky header/footer work on mobile */
     .chat{
       width:100%;
       max-width:var(--max-w);
@@ -28,8 +24,6 @@
       overflow:hidden;
       border:1px solid rgba(11,99,214,0.06);
     }
-
-    /* header (sticky) */
     .header{
       display:flex;
       align-items:center;
@@ -49,13 +43,10 @@
     .logo{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:0 0 auto}
     .title{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
     .subtitle{font-size:12px; opacity:.95; color:rgba(255,255,255,0.95); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-
     .controls{display:flex; gap:8px; align-items:center; flex:0 0 auto; max-width:50%}
     .mute{background:rgba(255,255,255,0.12); padding:8px 10px; border-radius:8px; color:#fff; cursor:pointer; border:1px solid rgba(255,255,255,0.08)}
     select#voiceSelect{background:transparent;color:#fff;border:none;outline:none;padding:6px;border-radius:6px; min-width:160px}
     select#voiceSelect, select#voiceSelect option { color:#fff; -webkit-text-fill-color:#fff; }
-
-    /* messages: flexible area */
     .messages{
       padding:12px;
       display:flex;
@@ -70,8 +61,6 @@
     .bot{align-self:flex-start; background:var(--bot-bg); color:#07203b}
     .user{align-self:flex-end; background:var(--user-bg); color:#032b57}
     .meta{font-size:11px;color:var(--muted);margin-top:6px}
-
-    /* footer (sticky) */
     .footer{
       padding:10px;
       display:flex;
@@ -88,12 +77,7 @@
     .inputWrap{display:flex;gap:8px;flex:1;align-items:center; min-width:0}
     input[type="text"]{flex:1;padding:12px 14px;border-radius:10px;border:1px solid #e4ecf8;background:#fff;font-size:15px;outline:none;box-shadow:inset 0 1px 0 rgba(10,20,40,0.02);min-width:0}
     button.send{background:var(--primary);color:#fff;border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;flex:0 0 auto}
-
-    /* quick suggestions */
-    .suggest{margin-top:6px;font-size:0.95em;color:#415a75}
-    .quick{background:#eef6ff;border:1px solid #cfe6ff;color:var(--primary);padding:6px 8px;border-radius:6px;margin:6px 6px 0 0;cursor:pointer;font-size:13px}
-
-    /* responsive tweaks */
+    .quick{background:#eef6ff;border:1px solid #cfe6ff;color:var(--primary);padding:6px 8px;border-radius:6px;margin:6px 6px 0 0;cursor:pointer;font-size:13px;display:inline-block;}
     @media (max-width:600px){
       .chat{height:100vh; border-radius:12px}
       .header{padding:10px; gap:8px; align-items:flex-start}
@@ -105,8 +89,6 @@
       input[type="text"]{padding:10px}
       .quick{font-size:12px;padding:6px}
     }
-
-    /* accessibility */
     button:focus, select:focus, input:focus { outline:3px solid rgba(11,99,214,0.18); outline-offset:2px; }
   </style>
 </head>
@@ -121,26 +103,21 @@
             <div class="subtitle">KTP • KK • SIM • BPJS • Nikah • Cerai</div>
           </div>
         </div>
-
         <div class="controls" aria-hidden="false">
           <button id="voiceToggle" class="mute" title="Suara: aktif/nonaktif">🔊</button>
           <select id="voiceSelect" aria-label="Pilih suara" title="Pilih suara"><option>Memuat suara ID...</option></select>
         </div>
       </header>
-
       <section id="messages" class="messages" aria-live="polite"></section>
-
       <form id="form" class="footer" onsubmit="return false;">
         <div class="inputWrap">
-          <input id="input" type="text" placeholder="Tanya: syarat KTP, cara buat SIM, info BPJS, nikah, cerai..." autocomplete="off" />
+          <input id="input" type="text" placeholder="Tanya: syarat KTP, cara buat SIM, info BPJS, nikah, cerai, surat pengantar, tidak mampu, usaha, waris..." autocomplete="off" />
         </div>
         <button id="send" class="send" aria-label="Kirim pesan">Kirim</button>
       </form>
     </main>
   </div>
-
   <script>
-    // minimal adjustments: auto-scroll on focus, keep previous TTS logic
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('send');
@@ -149,7 +126,6 @@
 
     function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function stripHtml(html){ const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; }
-
     function appendMessage(html, who='bot'){
       const div = document.createElement('div');
       div.className = 'msg ' + (who==='user' ? 'user' : 'bot');
@@ -158,31 +134,160 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    // basic KB + botReply (kept simple)
+    // Kata kunci yang didukung
+    const quickKeywords = [
+      {label:'syarat KTP', trigger:'syarat KTP'},
+      {label:'syarat KK', trigger:'syarat KK'},
+      {label:'syarat SIM', trigger:'syarat SIM'},
+      {label:'info BPJS', trigger:'info BPJS'},
+      {label:'pengantar nikah', trigger:'pengantar nikah'},
+      {label:'tidak mampu', trigger:'tidak mampu'},
+      {label:'surat usaha', trigger:'surat usaha'},
+      {label:'surat waris', trigger:'surat waris'},
+      {label:'surat keterangan umum', trigger:'surat keterangan umum'},
+      {label:'cerai', trigger:'cerai'}
+    ];
+    // Untuk memudahkan pencarian kata kunci mirip/typo
+    const simpleKeywords = quickKeywords.map(k=>k.trigger.toLowerCase());
+
+    // Knowledge base
     const kb = {
       ktp:{title:'Membuat KTP', text:'Syarat umum: membawa KK, akta kelahiran, fotokopi. Daftar di Dukcapil.' , link:{url:'https://www.dukcapil.kemendagri.go.id/', label:'Info Dukcapil'}},
       kk:{title:'Membuat/Mengurus KK', text:'Perubahan/penerbitan KK: dokumen anggota keluarga, lapor ke Dukcapil.' , link:{url:'https://www.dukcapil.kemendagri.go.id/', label:'Info Dukcapil'}},
       sim:{title:'Membuat SIM', text:'Persyaratan: fotokopi KTP, tes kesehatan, ujian teori & praktik.' , link:{url:'https://sim.korlantas.polri.go.id/', label:'Info SIM Korlantas'}},
       bpjs:{title:'BPJS Kesehatan', text:'Daftar online/ke kantor BPJS. Persyaratan: KTP, KK.' , link:{url:'https://www.bpjs-kesehatan.go.id/', label:'Info BPJS Kesehatan'}},
       nikah:{title:'Pendaftaran Nikah', text:'Untuk muslim daftar di KUA; non-muslim di catatan sipil. Persyaratan: KTP, KK, akta kelahiran.' , link:{url:'https://kemenag.go.id/', label:'Kementerian Agama'}},
-      cerai:{title:'Perceraian', text:'Ajukan ke Pengadilan Agama (muslim) atau Pengadilan Negeri (non-muslim). Dokumen: akta nikah, KTP.' , link:{url:'https://www.mahkamahagung.go.id/', label:'Info Pengadilan'}}
+      cerai:{title:'Perceraian', text:'Ajukan ke Pengadilan Agama (muslim) atau Pengadilan Negeri (non-muslim). Dokumen: akta nikah, KTP.' , link:{url:'https://www.mahkamahagung.go.id/', label:'Info Pengadilan'}},
+      pengantarnikah: {
+        title: "Surat Pengantar Nikah",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP Pemohon, dan akta kelahiran kedua calon mempelai<br>
+          • Foto background biru ukuran 3x4<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan form NI dan N4 pengantar nikah yang ditanda tangani oleh Lurah<br>
+          • Setelah selesai, pemohon sudah dapat membawa surat ke Kantor Urusan Agama (KUA)`,
+        link: { url: "#pengantarnikah", label: "Info Surat Pengantar Nikah" }
+      },
+      tidakmampu: {
+        title: "Surat Keterangan Tidak Mampu",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP Pemohon, dan akta kelahiran kedua calon mempelai<br>
+          • Surat pernyataan bermaterai 10.000<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan surat yang ditanda tangani oleh Lurah<br>
+          • Setelah selesai, pemohon sudah dapat membawa surat ke tujuan`,
+        link: { url: "#tidakmampu", label: "Info Surat Tidak Mampu" }
+      },
+      umum: {
+        title: "Surat Keterangan Umum",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP Pemohon<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan surat dan ditandatangani oleh Lurah<br>
+          • Setelah selesai, pemohon sudah dapat membawa surat ke tujuan`,
+        link: { url: "#umum", label: "Info Surat Keterangan Umum" }
+      },
+      usaha: {
+        title: "Surat Keterangan Usaha",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP Pemohon<br>
+          • Foto tempat usaha<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan surat yang ditanda tangani oleh Lurah<br>
+          • Setelah selesai, pemohon sudah dapat membawa surat ke tujuan`,
+        link: { url: "#usaha", label: "Info Surat Keterangan Usaha" }
+      },
+      waris: {
+        title: "Surat Keterangan Waris",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP semua ahli waris<br>
+          • Foto copy objek waris<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan surat keterangan ahli waris<br>
+          • Pemohon dan seluruh ahli waris menandatangani surat dan didokumentasikan lewat foto<br>
+          • Pemohon membawa kembali berkas ke Kelurahan untuk dicek dan ditandatangani Lurah<br>
+          • Selanjutnya pemohon dapat membawa ke Kecamatan beserta membawa persyaratan`,
+        link: { url: "#waris", label: "Info Surat Keterangan Waris" }
+      }
     };
+    function formatKB(item){
+      return '<strong>'+item.title+'</strong><br>'+item.text+'<br><a class="link" href="'+item.link.url+'" target="_blank" rel="noopener">'+item.link.label+'</a>';
+    }
+    // Otomatis kirim ulang keyword jika klik - kirim ke input dan submit
+    function quickSend(kw){
+      inputEl.value = kw;
+      handleSend();
+    }
 
-    function formatKB(item){ return '<strong>'+item.title+'</strong><br>'+item.text+'<br><a class="link" href="'+item.link.url+'" target="_blank" rel="noopener">'+item.link.label+'</a>'; }
+    // fallback jika tidak paham, beri saran keyword
+    function suggestionMsg(){
+      let html = 'Maaf, saya belum paham. Silahkan pilih salah satu kata kunci berikut:<br>';
+      quickKeywords.forEach(k=>{
+        html += `<span class="quick" onclick="quickSend('${k.trigger.replace(/'/g,"&apos;")}')">${k.label}</span> `;
+      });
+      return html;
+    }
 
+    // Agar event onclick quickSend berfungsi:
+    window.quickSend = quickSend;
+
+    // balasan utama
     function botReply(raw){
       const msg = raw.toLowerCase();
+      if (/pengantar.*nikah/.test(msg) || /\bpengantar nikah\b/.test(msg)) return formatKB(kb.pengantarnikah);
+      if (/tidak.?mampu/.test(msg) || /\bsktm\b/.test(msg)) return formatKB(kb.tidakmampu);
+      if (/keterangan.*umum/.test(msg) || /\bsurat umum\b/.test(msg) || /\bketerangan umum\b/.test(msg)) return formatKB(kb.umum);
+      if (/usaha/.test(msg) && /surat|keterangan/.test(msg)) return formatKB(kb.usaha);
+      if (/waris/.test(msg)) return formatKB(kb.waris);
       if (/\b(ktp|e-?ktp)\b/.test(msg)) return formatKB(kb.ktp);
       if (/\b(kk|kartu keluarga)\b/.test(msg)) return formatKB(kb.kk);
       if (/\b(sim)\b/.test(msg)) return formatKB(kb.sim);
       if (/\b(bpjs)\b/.test(msg)) return formatKB(kb.bpjs);
       if (/\b(nikah|pernikahan)\b/.test(msg)) return formatKB(kb.nikah);
       if (/\b(cerai|perceraian)\b/.test(msg)) return formatKB(kb.cerai);
-      if (/\b(halo|hi|hai)\b/.test(msg)) return 'Halo, saya Lisa. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, atau cerai.';
-      return 'Maaf, saya belum paham. Coba: "syarat KTP" atau "cara buat SIM".';
+      if (/\b(halo|hi|hai)\b/.test(msg)) return 'Halo, saya Lisa. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, cerai, serta berbagai surat keterangan kelurahan.';
+      // typo minimal correction: sarankan keyword kalau salah ketik
+      // Cek apakah input mirip dengan keyword
+      let inputWords = msg.split(/[\s.,]+/);
+      // Threshold kemiripan
+      let closeMatches = simpleKeywords.filter(kw=>
+        inputWords.some(iw => kw.includes(iw) || iw.includes(kw) || levenshtein(kw, iw)<=3)
+      );
+      if (closeMatches.length) {
+        return `Maksud Anda: ${closeMatches.map(c=>`<span class="quick" onclick="quickSend('${c}')">${c}</span>`).join(' ')} ?`;
+      }
+      // Fallback selalu tampilkan daftar
+      return suggestionMsg();
     }
-
-    // minimal TTS (Indonesia only) — keep previous polling approach but lightweight
+    // Levenshtein (untuk toleransi typo)
+    function levenshtein(a, b) {
+      if (a === b) return 0;
+      if (!a.length) return b.length;
+      if (!b.length) return a.length;
+      let v0 = new Array(b.length + 1).fill(0);
+      let v1 = new Array(b.length + 1).fill(0);
+      for (let i = 0; i < v0.length; i++) v0[i] = i;
+      for (let i = 0; i < a.length; i++) {
+        v1[0] = i + 1;
+        for (let j = 0; j < b.length; j++) {
+          let cost = a[i] === b[j] ? 0 : 1;
+          v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+        }
+        let tmp = v0; v0 = v1; v1 = tmp;
+      }
+      return v0[b.length];
+    }
+    // Voice
     let voiceEnabled = true;
     let voices = [];
     let selectedVoice = null;
@@ -199,7 +304,7 @@
       selectedVoice = voices[parseInt(voiceSelect.value,10)] || idVoices[0];
     }
     function loadVoices(){ voices = (speechSynthesis && speechSynthesis.getVoices()) || []; populateIndoVoices(); }
-    if ('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; setTimeout(loadVoices,500); } else { voiceSelect.innerHTML='<option>Unavailable</option>'; voiceSelect.disabled=true; voiceToggle.disabled=true; }
+    if ('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; setTimeout(loadVoices,500); } else { voiceSelect.innerHTML='<option>Unavailable</option>'; voiceSelect.disabled=true; selectedVoice=null; }
     voiceToggle.addEventListener('click', ()=>{ voiceEnabled = !voiceEnabled; voiceToggle.textContent = voiceEnabled ? '🔊' : '🔇'; });
     voiceSelect.addEventListener('change', ()=>{ const idx = parseInt(voiceSelect.value,10); selectedVoice = Number.isFinite(idx)&&idx>=0 ? voices[idx] : null; });
 
@@ -212,11 +317,7 @@
       u.rate = 1; u.pitch = 1;
       speechSynthesis.speak(u);
     }
-
-    // initial welcome
-    appendMessage('Halo, saya Lisa. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, atau cerai.');
-
-    // send logic
+    appendMessage('Halo, saya Lisa. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, cerai, serta berbagai surat kelurahan (pengantar nikah, tidak mampu, usaha, waris, dan surat umum).');
     function handleSend(){
       const text = inputEl.value.trim();
       if (!text) return;
@@ -228,11 +329,9 @@
         if (bots.length){ const last = bots[bots.length-1]; if (last && /sedang mengetik/.test(last.textContent)) last.remove(); }
         const reply = botReply(text);
         appendMessage(reply, 'bot');
-        // speak the reply
         speak(stripHtml(reply));
       }, 600);
     }
-
     sendBtn.addEventListener('click', handleSend);
     inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') handleSend(); });
 
