@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
-  <title>Lisa — Asisten Informasi</title>
+  <title>Ciptomulyo — Asisten Informasi</title>
   <style>
     :root{
       --bg:#f2f6fb; --card:#ffffff; --primary:#0b63d6; --muted:#7a8aa6;
@@ -25,7 +25,6 @@
       border:1px solid rgba(11,99,214,0.06);
       position:relative;
     }
-    /* LOGO transparan - di dalam .chat, tepat di belakang area pesan */
     .chat-logo-bg {
       position:absolute;
       top:50%;
@@ -34,7 +33,7 @@
       width:80%;
       height:auto;
       z-index:1;
-      opacity:0.33; /* Lebih jelas, sebelumnya 0.13 */
+      opacity:0.33;
       pointer-events:none;
       display:block;
       background:none;
@@ -123,16 +122,16 @@
 </head>
 <body>
   <div class="wrap">
-    <main class="chat" role="application" aria-label="Lisa - Asisten Informasi">
+    <main class="chat" role="application" aria-label="Ciptomulyo - Asisten Informasi">
       <!-- LOGO transparan di tengah background chat -->
       <div class="chat-logo-bg">
-        <img src="logo1.jpg" alt="Logo Lisa Bot" draggable="false" decoding="async" />
+        <img src="logo1.jpg" alt="Logo Ciptomulyo Bot" draggable="false" decoding="async" />
       </div>
       <header class="header">
         <div class="brand">
-          <div class="logo" aria-hidden="true">L</div>
+          <div class="logo" aria-hidden="true">C</div>
           <div style="min-width:0">
-            <div class="title">Lisa — Asisten Informasi</div>
+            <div class="title">Ciptomulyo — Asisten Informasi</div>
             <div class="subtitle">KTP • KK • SIM • BPJS • Nikah • Cerai</div>
           </div>
         </div>
@@ -151,7 +150,228 @@
     </main>
   </div>
   <script>
-    // ...script sama seperti sebelumnya, TANPA perubahan.
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const voiceToggle = document.getElementById('voiceToggle');
+    const voiceSelect = document.getElementById('voiceSelect');
+
+    function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function stripHtml(html){ const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; }
+    function appendMessage(html, who='bot'){
+      const div = document.createElement('div');
+      div.className = 'msg ' + (who==='user' ? 'user' : 'bot');
+      div.innerHTML = html;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // Kata kunci yang didukung
+    const quickKeywords = [
+      {label:'syarat KTP', trigger:'syarat KTP'},
+      {label:'syarat KK', trigger:'syarat KK'},
+      {label:'syarat SIM', trigger:'syarat SIM'},
+      {label:'info BPJS', trigger:'info BPJS'},
+      {label:'pengantar nikah', trigger:'pengantar nikah'},
+      {label:'tidak mampu', trigger:'tidak mampu'},
+      {label:'surat usaha', trigger:'surat usaha'},
+      {label:'surat waris', trigger:'surat waris'},
+      {label:'surat keterangan umum', trigger:'surat keterangan umum'},
+      {label:'cerai', trigger:'cerai'}
+    ];
+    // Untuk memudahkan pencarian kata kunci mirip/typo
+    const simpleKeywords = quickKeywords.map(k=>k.trigger.toLowerCase());
+
+    // Knowledge base
+    const kb = {
+      ktp:{title:'Membuat KTP', text:'Syarat umum: membawa KK, akta kelahiran, fotokopi. Daftar di Dukcapil.' , link:{url:'https://www.dukcapil.kemendagri.go.id/', label:'Info Dukcapil'}},
+      kk:{title:'Membuat/Mengurus KK', text:'Perubahan/penerbitan KK: dokumen anggota keluarga, lapor ke Dukcapil.' , link:{url:'https://www.dukcapil.kemendagri.go.id/', label:'Info Dukcapil'}},
+      sim:{title:'Membuat SIM', text:'Persyaratan: fotokopi KTP, tes kesehatan, ujian teori & praktik.' , link:{url:'https://sim.korlantas.polri.go.id/', label:'Info SIM Korlantas'}},
+      bpjs:{title:'BPJS Kesehatan', text:'Daftar online/ke kantor BPJS. Persyaratan: KTP, KK.' , link:{url:'https://www.bpjs-kesehatan.go.id/', label:'Info BPJS Kesehatan'}},
+      nikah:{title:'Pendaftaran Nikah', text:'Untuk muslim daftar di KUA; non-muslim di catatan sipil. Persyaratan: KTP, KK, akta kelahiran.' , link:{url:'https://kemenag.go.id/', label:'Kementerian Agama'}},
+      cerai:{title:'Perceraian', text:'Ajukan ke Pengadilan Agama (muslim) atau Pengadilan Negeri (non-muslim). Dokumen: akta nikah, KTP.' , link:{url:'https://www.mahkamahagung.go.id/', label:'Info Pengadilan'}},
+      pengantarnikah: {
+        title: "Surat Pengantar Nikah",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP Pemohon, dan akta kelahiran kedua calon mempelai<br>
+          • Foto background biru ukuran 3x4<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan form NI dan N4 pengantar nikah yang ditanda tangani oleh Lurah<br>
+          • Setelah selesai, pemohon sudah dapat membawa surat ke Kantor Urusan Agama (KUA)`,
+        link: { url: "#pengantarnikah", label: "Info Surat Pengantar Nikah" }
+      },
+      tidakmampu: {
+        title: "Surat Keterangan Tidak Mampu",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP Pemohon, dan akta kelahiran kedua calon mempelai<br>
+          • Surat pernyataan bermaterai 10.000<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan surat yang ditanda tangani oleh Lurah<br>
+          • Setelah selesai, pemohon sudah dapat membawa surat ke tujuan`,
+        link: { url: "#tidakmampu", label: "Info Surat Tidak Mampu" }
+      },
+      umum: {
+        title: "Surat Keterangan Umum",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP Pemohon<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan surat dan ditandatangani oleh Lurah<br>
+          • Setelah selesai, pemohon sudah dapat membawa surat ke tujuan`,
+        link: { url: "#umum", label: "Info Surat Keterangan Umum" }
+      },
+      usaha: {
+        title: "Surat Keterangan Usaha",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP Pemohon<br>
+          • Foto tempat usaha<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan surat yang ditanda tangani oleh Lurah<br>
+          • Setelah selesai, pemohon sudah dapat membawa surat ke tujuan`,
+        link: { url: "#usaha", label: "Info Surat Keterangan Usaha" }
+      },
+      waris: {
+        title: "Surat Keterangan Waris",
+        text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
+          • Surat pengantar RT/RW<br>
+          • Foto copy KK &amp; KTP semua ahli waris<br>
+          • Foto copy objek waris<br>
+        <strong>ALUR PELAYANAN:</strong><br>
+          • Pemohon datang ke Kelurahan dengan membawa persyaratan administrasi<br>
+          • Petugas membantu membuatkan surat keterangan ahli waris<br>
+          • Pemohon dan seluruh ahli waris menandatangani surat dan didokumentasikan lewat foto<br>
+          • Pemohon membawa kembali berkas ke Kelurahan untuk dicek dan ditandatangani Lurah<br>
+          • Selanjutnya pemohon dapat membawa ke Kecamatan beserta membawa persyaratan`,
+        link: { url: "#waris", label: "Info Surat Keterangan Waris" }
+      }
+    };
+    function formatKB(item){
+      return '<strong>'+item.title+'</strong><br>'+item.text+'<br><a class="link" href="'+item.link.url+'" target="_blank" rel="noopener">'+item.link.label+'</a>';
+    }
+    // Otomatis kirim ulang keyword jika klik - kirim ke input dan submit
+    function quickSend(kw){
+      inputEl.value = kw;
+      handleSend();
+    }
+
+    // fallback jika tidak paham, beri saran keyword
+    function suggestionMsg(){
+      let html = 'Maaf, Ciptomulyo belum paham. Silahkan pilih salah satu kata kunci berikut:<br>';
+      quickKeywords.forEach(k=>{
+        html += `<span class="quick" onclick="quickSend('${k.trigger.replace(/'/g,"&apos;")}')">${k.label}</span> `;
+      });
+      return html;
+    }
+
+    // Agar event onclick quickSend berfungsi:
+    window.quickSend = quickSend;
+
+    // balasan utama
+    function botReply(raw){
+      const msg = raw.toLowerCase();
+      if (/pengantar.*nikah/.test(msg) || /\bpengantar nikah\b/.test(msg)) return formatKB(kb.pengantarnikah);
+      if (/tidak.?mampu/.test(msg) || /\bsktm\b/.test(msg)) return formatKB(kb.tidakmampu);
+      if (/keterangan.*umum/.test(msg) || /\bsurat umum\b/.test(msg) || /\bketerangan umum\b/.test(msg)) return formatKB(kb.umum);
+      if (/usaha/.test(msg) && /surat|keterangan/.test(msg)) return formatKB(kb.usaha);
+      if (/waris/.test(msg)) return formatKB(kb.waris);
+      if (/\b(ktp|e-?ktp)\b/.test(msg)) return formatKB(kb.ktp);
+      if (/\b(kk|kartu keluarga)\b/.test(msg)) return formatKB(kb.kk);
+      if (/\b(sim)\b/.test(msg)) return formatKB(kb.sim);
+      if (/\b(bpjs)\b/.test(msg)) return formatKB(kb.bpjs);
+      if (/\b(nikah|pernikahan)\b/.test(msg)) return formatKB(kb.nikah);
+      if (/\b(cerai|perceraian)\b/.test(msg)) return formatKB(kb.cerai);
+      if (/\b(halo|hi|hai)\b/.test(msg))
+        return 'Halo, saya Ciptomulyo. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, cerai, serta berbagai surat keterangan kelurahan.';
+      // typo minimal correction: sarankan keyword kalau salah ketik
+      // Cek apakah input mirip dengan keyword
+      let inputWords = msg.split(/[\s.,]+/);
+      // Threshold kemiripan
+      let closeMatches = simpleKeywords.filter(kw=>
+        inputWords.some(iw => kw.includes(iw) || iw.includes(kw) || levenshtein(kw, iw)<=3)
+      );
+      if (closeMatches.length) {
+        return `Maksud Anda: ${closeMatches.map(c=>`<span class="quick" onclick="quickSend('${c}')">${c}</span>`).join(' ')} ?`;
+      }
+      // Fallback selalu tampilkan daftar
+      return suggestionMsg();
+    }
+    // Levenshtein (untuk toleransi typo)
+    function levenshtein(a, b) {
+      if (a === b) return 0;
+      if (!a.length) return b.length;
+      if (!b.length) return a.length;
+      let v0 = new Array(b.length + 1).fill(0);
+      let v1 = new Array(b.length + 1).fill(0);
+      for (let i = 0; i < v0.length; i++) v0[i] = i;
+      for (let i = 0; i < a.length; i++) {
+        v1[0] = i + 1;
+        for (let j = 0; j < b.length; j++) {
+          let cost = a[i] === b[j] ? 0 : 1;
+          v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+        }
+        let tmp = v0; v0 = v1; v1 = tmp;
+      }
+      return v0[b.length];
+    }
+    // Voice
+    let voiceEnabled = true;
+    let voices = [];
+    let selectedVoice = null;
+    function populateIndoVoices(){
+      voiceSelect.innerHTML = '';
+      const idVoices = voices.filter(v=>v.lang && /(^|-)id($|[-_])/i.test(v.lang));
+      if (!idVoices.length){ voiceSelect.innerHTML = '<option value="-1">Tidak ada suara Indonesia</option>'; voiceSelect.disabled=true; selectedVoice=null; return; }
+      idVoices.forEach(v=>{
+        const i = voices.indexOf(v);
+        const opt = document.createElement('option');
+        opt.value = i; opt.textContent = v.name + ' ('+v.lang+')'; voiceSelect.appendChild(opt);
+      });
+      voiceSelect.disabled=false;
+      selectedVoice = voices[parseInt(voiceSelect.value,10)] || idVoices[0];
+    }
+    function loadVoices(){ voices = (speechSynthesis && speechSynthesis.getVoices()) || []; populateIndoVoices(); }
+    if ('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; setTimeout(loadVoices,500); } else { voiceSelect.innerHTML='<option>Unavailable</option>'; voiceSelect.disabled = true; }
+    voiceToggle.addEventListener('click', ()=>{ voiceEnabled = !voiceEnabled; voiceToggle.textContent = voiceEnabled ? '🔊' : '🔇'; });
+    voiceSelect.addEventListener('change', ()=>{ const idx = parseInt(voiceSelect.value,10); selectedVoice = Number.isFinite(idx)&&idx>=0 ? voices[idx] : null; });
+
+    function speak(text){
+      if (!voiceEnabled || !('speechSynthesis' in window) || !text) return;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (selectedVoice) u.voice = selectedVoice;
+      u.lang = selectedVoice?.lang || 'id-ID';
+      u.rate = 1; u.pitch = 1;
+      speechSynthesis.speak(u);
+    }
+    appendMessage('Halo, saya Ciptomulyo. Bisa bantu tentang KTP, KK, SIM, BPJS, nikah, cerai, serta berbagai surat kelurahan (pengantar nikah, tidak mampu, usaha, waris, dan surat umum).');
+    function handleSend(){
+      const text = inputEl.value.trim();
+      if (!text) return;
+      appendMessage(escapeHtml(text), 'user');
+      inputEl.value = '';
+      appendMessage('<em>Ciptomulyo sedang mengetik...</em>', 'bot');
+      setTimeout(()=>{
+        const bots = messagesEl.querySelectorAll('.bot');
+        if (bots.length){ const last = bots[bots.length-1]; if (last && /sedang mengetik/.test(last.textContent)) last.remove(); }
+        const reply = botReply(text);
+        appendMessage(reply, 'bot');
+        speak(stripHtml(reply));
+      }, 600);
+    }
+    sendBtn.addEventListener('click', handleSend);
+    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') handleSend(); });
+
+    // scroll helpers to keep input visible on mobile keyboards
+    inputEl.addEventListener('focus', ()=> setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 300));
+    window.addEventListener('resize', ()=> setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 200));
+    window.addEventListener('orientationchange', ()=> setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 300));
   </script>
 </body>
 </html>
