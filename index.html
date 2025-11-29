@@ -77,7 +77,33 @@
       flex-wrap:wrap;
     }
     .brand{display:flex; gap:12px; align-items:center; min-width:0}
-    .logo{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:0 0 auto}
+    .logo{
+      width:44px;
+      height:44px;
+      border-radius:10px;
+      background:rgba(255,255,255,0.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      font-size:18px;
+      flex:0 0 auto;
+      overflow:hidden;
+      padding:0;
+    }
+    .logo img {
+      max-width:38px;
+      max-height:38px;
+      width:auto;
+      height:auto;
+      display:block;
+      border-radius:8px;
+      background:transparent;
+      user-select:none;
+      user-drag:none;
+      pointer-events:none;
+      margin:0 auto;
+    }
     .title{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
     .subtitle{font-size:12px; opacity:.95; color:rgba(255,255,255,0.95); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
     .controls{display:flex; gap:8px; align-items:center; flex:0 0 auto; max-width:50%}
@@ -116,6 +142,7 @@
       input[type="text"]{padding:10px}
       .quick{font-size:12px;padding:6px}
       .chat-logo-bg img { max-width:160px;}
+      .logo img { max-width:30px; max-height:30px; }
     }
     button:focus, select:focus, input:focus { outline:3px solid rgba(11,99,214,0.18); outline-offset:2px; }
   </style>
@@ -129,7 +156,7 @@
       </div>
       <header class="header">
         <div class="brand">
-          <div class="logo" aria-hidden="true">C</div>
+          <div class="logo" aria-hidden="true"><img src="logo2.jpeg" alt="Logo Ciptomulyo" /></div>
           <div style="min-width:0">
             <div class="title">Ciptomulyo — Asisten Informasi</div>
             <div class="subtitle">KTP • KK • SIM • BPJS • Nikah • Cerai</div>
@@ -150,6 +177,7 @@
     </main>
   </div>
   <script>
+    // (tidak ada perubahan pada script)
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('send');
