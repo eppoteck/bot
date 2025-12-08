@@ -306,7 +306,7 @@
           <div class="logo" aria-hidden="true"><img src="logo2.jpg" alt="Logo Ciptomulyo" /></div>
           <div style="min-width:0">
             <div class="title">Ciptomulyo — Asisten Informasi</div>
-            <div class="subtitle">BPJS, Nikah, Cerai, SKTM, Usaha, Waris, Surat Keterangan</div>
+            <div class="subtitle">BPJS, Surat Pengantar Nikah, SKTM, SKU, Waris, Surat Keterangan</div>
           </div>
         </div>
         <div class="controls" aria-hidden="false">
@@ -317,7 +317,7 @@
       <section id="messages" class="messages" aria-live="polite"></section>
       <form id="form" class="footer" onsubmit="return false;">
         <div class="inputWrap">
-          <input id="input" type="text" placeholder="Tanya: BPJS, Nikah, Cerai, Surat Keterangan Tidak Mampu, Surat Keterangan Usaha, Waris ..." autocomplete="off" />
+          <input id="input" type="text" placeholder="Tanya: BPJS, Surat Pengantar Nikah, Surat Keterangan Tidak Mampu, SKU, Waris ..." autocomplete="off" />
         </div>
         <button id="send" class="send" aria-label="Kirim pesan">Kirim</button>
       </form>
@@ -343,11 +343,9 @@
     // Kata kunci utama/cepat
     const quickKeywords = [
       {label:'BPJS', trigger:'bpjs'},
-      {label:'Nikah', trigger:'nikah'},
-      {label:'Cerai', trigger:'cerai'},
       {label:'Surat Pengantar Nikah', trigger:'pengantar nikah'},
       {label:'Surat Keterangan Tidak Mampu', trigger:'surat keterangan tidak mampu'},
-      {label:'Surat Keterangan Usaha', trigger:'surat keterangan usaha'},
+      {label:'SKU', trigger:'sku'},
       {label:'Surat Keterangan Waris', trigger:'surat keterangan waris'},
       {label:'Surat Keterangan Umum', trigger:'surat keterangan umum'}
     ];
@@ -397,7 +395,7 @@
           • Setelah selesai, pemohon sudah dapat membawa surat ke tujuan<br><br>
           Untuk info lebih lanjut silahkan datang ke Kelurahan Ciptomulyo.`
       },
-      suratketeranganusaha: {
+      sku: {
         title: "Surat Keterangan Usaha",
         text: `<strong>PERSYARATAN ADMINISTRASI:</strong><br>
           • Surat pengantar RT/RW<br>
@@ -435,6 +433,7 @@
           Untuk info lebih lanjut silahkan datang ke Kelurahan Ciptomulyo.`
       }
     };
+
     function formatKB(item){
       return '<strong>'+item.title+'</strong><br>'+item.text;
     }
@@ -462,13 +461,15 @@
       if (/pengantar.*nikah/.test(msg) || /\bpengantar nikah\b/.test(msg)) return formatKB(kb.pengantarnikah);
       if (/tidak.?mampu/.test(msg) || /\bsktm\b/.test(msg) || /surat keterangan tidak mampu/.test(msg)) return formatKB(kb.suratketerangantidakmampu);
       if (/keterangan.*umum/.test(msg) || /\bsurat umum\b/.test(msg) || /\bketerangan umum\b/.test(msg) || /surat keterangan umum/.test(msg)) return formatKB(kb.suratketeranganumum);
-      if (/usaha/.test(msg) && /surat|keterangan/.test(msg) || /surat keterangan usaha/.test(msg)) return formatKB(kb.suratketeranganusaha);
+      if (/sku/.test(msg) || (/usaha/.test(msg) && /surat|keterangan/.test(msg)) || /surat keterangan usaha/.test(msg)) return formatKB(kb.sku);
       if (/waris/.test(msg) || /surat keterangan waris/.test(msg)) return formatKB(kb.suratketeranganwaris);
       if (/bpjs\b/.test(msg)) return formatKB(kb.bpjs);
+      // Nikah pendaftaran tetap ada untuk pertanyaan umum
       if (/\b(nikah|pernikahan)\b/.test(msg)) return formatKB(kb.nikah);
+      // Cerai tetap bisa dijawab jika ada yang bertanya, tapi tidak muncul di daftar quick keyword
       if (/\b(cerai|perceraian)\b/.test(msg)) return formatKB(kb.cerai);
       if (/\b(halo|hi|hai)\b/.test(msg))
-        return 'Halo, saya Ciptomulyo. Bisa bantu tentang BPJS, Nikah, Cerai, SKTM, Usaha, Waris, dan berbagai surat keterangan kelurahan.';
+        return 'Halo, saya Ciptomulyo. Bisa bantu tentang BPJS, Surat Pengantar Nikah, SKTM, SKU, Waris, dan berbagai surat keterangan kelurahan.';
       // typo minimal correction: sarankan keyword kalau salah ketik
       let inputWords = msg.split(/[\s.,]+/);
       let closeMatches = simpleKeywords.filter(kw=>
@@ -530,7 +531,7 @@
     }
 
     // SAPAAN AWAL (TANPA KALIMAT PENUTUP)
-    appendMessage('Halo, saya Ciptomulyo. Bisa bantu tentang BPJS, Nikah, Cerai, SKTM, Usaha, Waris, dan berbagai surat keterangan kelurahan.');
+    appendMessage('Halo, saya Ciptomulyo. Bisa bantu tentang BPJS, Surat Pengantar Nikah, SKTM, SKU, Waris, dan berbagai surat keterangan kelurahan.');
 
     function handleSend(){
       const text = inputEl.value.trim();
